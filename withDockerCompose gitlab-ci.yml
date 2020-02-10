@@ -1,0 +1,58 @@
+image: docker:latest
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay
+
+services:
+- docker:dind
+
+before_script:
+#- export DYNAMIC_ENV_VAR=DEVELOP
+- sudo apt-get install -y python-pip
+- sudo pip install docker-compose 
+- docker info
+- apk update
+- apk upgrade
+- apk add python python-dev py-pip build-base
+- docker-compose -v
+##- curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+##- chmod +x /usr/local/bin/docker-compose
+
+build:
+  stage: build
+  script:
+  #- echo setting up env $DYNAMIC_ENV_VAR
+  - sudo docker image prune -f
+  - sudo docker-compose -f docker-compose.yml build --no-cache
+  - sudo docker-compose -f docker-compose.yml up -d
+
+#------------------
+
+staging:
+  stage: deploy
+  before_script:
+    #- export DYNAMIC_ENV_VAR=PRODUCTION
+    - sudo apt-get install -y python-pip
+    - sudo pip install docker-compose 
+    - docker info
+    - apk update
+    - apk upgrade
+    - apk add python python-dev py-pip build-base
+    - docker-compose -v
+    ##- curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+    ##- chmod +x /usr/local/bin/docker-compose
+  only:
+    - production
+  tags:
+    - production  
+  script:
+    #- echo setting up env $DYNAMIC_ENV_VAR
+    - sudo docker image prune -f
+    - sudo docker-compose -f docker-compose.yml build --no-cache
+    - sudo docker-compose -f docker-compose.yml up -d
+  when: manual
